@@ -24,19 +24,19 @@ return new class extends Migration {
         });
 
         Schema::create('recipe_ingredients', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('recipe_id')->constrained()->onDelete('cascade');
-            $table->foreignId('ingredient_id')->constrained();
-            $table->string('measurement_unit')->nullable(); // Measurement unit for the ingredient, e.g., 'grams', 'cups'
+            $table->id()->increments();
+            $table->foreignId('recipe_id')->constrained('recipes')->onDelete('cascade');
+            $table->foreignId('ingredient_id')->constrained('ingredients')->onDelete('cascade');
+            $table->string('unit')->nullable(); // Measurement unit for the ingredient, e.g., 'grams', 'cups'
             $table->decimal('quantity', 8, 2)->nullable(); // Quantity of the ingredient in the specified measurement unit
             $table->timestamps();
         });
 
         Schema::create('recipe_steps', function (Blueprint $table) {
-            $table->id();
+            $table->id()->increments();
             $table->text('description');
             $table->integer('order');
-            $table->foreignId('recipe_id')->constrained()->onDelete('cascade');
+            $table->foreignId('recipe_id')->constrained('recipes')->onDelete('cascade');
             $table->timestamps();
         });
     }

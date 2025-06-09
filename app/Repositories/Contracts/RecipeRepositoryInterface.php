@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\Contracts;
 
 interface RecipeRepositoryInterface
 {
     public function searchByKeyword(string $word);
 
-    public function searchByIngredient(string $ingredient);
+    public function searchRecipeByIngredients($query, string $ingredient);
 
-    public function searchByCategory(string $category);
+    public function searchRecipeByAuthors($query, string $email);
+
+    public function findByIdOrSlug($idOrSlug);
 }

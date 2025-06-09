@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->integer('servings')->nullable();
             $table->string('image_url')->nullable();
             $table->string('slug')->unique(); // Unique slug for SEO-friendly URLs
-            $table->foreignId('user_id')->constrained()->nullable(); // Recipes CAN be created by users, but not required
+            $table->foreignId('user_id')->nullable(); // Recipes CAN be created by users, but not required
             $table->timestamps();
         });
     }

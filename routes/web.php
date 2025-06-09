@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IngredientController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,13 +19,13 @@ Route::get('/', function () {
 });
 
 // Example route using a repository
-Route::get('/recipes', function () {
-    // Here you would typically use a repository to fetch data
-    // $recipes = app(RecipeRepositoryInterface::class)->all();
-    // return view('recipes.index', compact('recipes'));
-});
+// Route::get('/recipes', function () {
+//     // Here you would typically use a repository to fetch data
+//     // $recipes = app(RecipeRepositoryInterface::class)->all();
+//     // return view('recipes.index', compact('recipes'));
+// });
 
-Route::resource('ingredients', IngredientController::class);
+// Route::resource('ingredients', IngredientController::class);
 // Additional routes can be defined here
 // Route::get('/recipes/{id}', ...);
 // Route::post('/recipes', ...);

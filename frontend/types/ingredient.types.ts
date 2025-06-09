@@ -3,6 +3,7 @@ export interface Ingredient {
     name: string;
     type?: string;
     measurement_unit?: string;
+    unit?: string;
     serving_quantity?: number;
     quantity?: number;
     recipeId?: string;

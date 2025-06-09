@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use App\Repositories\RecipeRepositoryInterface;
+use App\Repositories\Contracts\RecipeRepositoryInterface;
 use App\Repositories\RecipeRepository;
+use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -16,6 +16,5 @@ class RepositoryServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        //
     }
 }

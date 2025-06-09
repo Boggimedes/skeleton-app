@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Models\Ingredient;
 use App\Repositories\IngredientRepository;
+use Tests\TestCase;
 
 class IngredientRepositoryTest extends TestCase
 {
@@ -12,7 +12,7 @@ class IngredientRepositoryTest extends TestCase
     {
         Ingredient::factory()->count(5)->create();
         $repository = new IngredientRepository();
-        $ingredients = $repository->getAllIngredients();
+        $ingredients = $repository->all();
         $this->assertCount(5, $ingredients);
     }
 
@@ -20,7 +20,7 @@ class IngredientRepositoryTest extends TestCase
     {
         $repository = new IngredientRepository();
         $data = ['name' => 'Sugar', 'quantity' => 2];
-        $ingredient = $repository->createIngredient($data);
+        $ingredient = $repository->create($data);
         $this->assertEquals('Sugar', $ingredient->name);
     }
 

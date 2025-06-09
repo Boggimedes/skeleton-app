@@ -1,3 +1,15 @@
+## Features Planned
+ - More testing (current coverate only about 30%)
+ - Ingredient Input/Edit Page
+ - Calorie and Macronutrient Calculator
+ - Ingredient Autocomplete
+ - Expand Fuzzy search (search by word rather than name)
+ - Dropdown/Autocomplete for measurement field
+ - Handle ingredient pluralization
+
+
+
+
 ## Getting started
 
 ### Pre-requisites
@@ -5,7 +17,7 @@
 - docker-compose
 
 ### Check out this repository
-`git clone git@github.com:wildalaskan/skeleton-app.git`
+`git clone git@github.com:Boggimedes/skeleton-app.git`
 
 `cd skeleton-app`
 
@@ -28,6 +40,8 @@ docker run --rm \
 `./vendor/bin/sail artisan key:generate`
 
 `./vendor/bin/sail artisan migrate`
+
+`./vendor/bin/sail artisan db:seed`
 
 ### Kickstart the nuxt frontend
 `./vendor/bin/sail npm install --prefix frontend`
@@ -52,3 +66,5 @@ Or use any database GUI and connect to 127.0.0.1 port 3333
 
 Sometimes it's necessary to restart the nuxt app when adding new routes. Simply `ctrl+c` on the npm command execute
 `./vendor/bin/sail npm run dev --prefix frontend` again
+
+Search for recipes by boggimedes@example.net for the best recipe ever.
