@@ -1,16 +1,11 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\Contracts;
 
 interface IngredientRepositoryInterface
 {
     /**
      * Search for ingredients by query.
-     *
-     * @param string $query
-     * @return mixed
      */
-    public function searchIngredients(string $query);
-
-
+    public function searchIngredients($query, string $ingredient);
 }

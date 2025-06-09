@@ -1,214 +1,109 @@
+<template>
+	<div class="container mx-auto p-6">
+		<NuxtLink to="/" class="mb-4 inline-block text-blue-600 hover:underline">&lt; Back to search</NuxtLink>
+
+		<div v-if="loading" class="text-center">Loading recipe...</div>
+
+		<div v-else class="max-w-4xl mx-auto">
+			<h1 class="text-4xl font-bold mb-4">{{ isNewRecipe ? 'New Recipe' : 'Edit Recipe' }}</h1>
+
+			<form @submit.prevent="saveRecipe">
+				<div class="mb-4">
+					<label for="title" class="block font-semibold mb-2">Title</label>
+					<input v-model="recipe.title" id="title" type="text" class="w-full border rounded p-2" />
+				</div>
+
+				<div class="mb-4">
+					<label for="image" class="block font-semibold mb-2">Image URL</label>
+					<input v-model="recipe.image" id="image" type="text" class="w-full border rounded p-2" />
+				</div>
+
+				<div class="mb-4">
+					<label for="description" class="block font-semibold mb-2">Description</label>
+					<textarea v-model="recipe.description" id="description" class="w-full border rounded p-2"></textarea>
+				</div>
+
+				<h2 class="text-2xl font-semibold mb-2">Ingredients</h2>
+				<div v-for="(ingredient, index) in recipe.ingredients" :key="index" class="mb-4">
+					<div class="flex gap-2">
+						<input v-model="ingredient.quantity" placeholder="Quantity" type="text" class="border rounded p-2 flex-1" />
+						<input v-model="ingredient.unit" placeholder="Unit" type="text" class="border rounded p-2 flex-1" />
+						<input v-model="ingredient.name" placeholder="Ingredient" type="text" class="border rounded p-2 flex-2" />
+						<button type="button" @click="removeIngredient(index)" class="text-red-600">Remove</button>
+					</div>
+				</div>
+				<button type="button" @click="addIngredient" class="text-blue-600">+ Add Ingredient</button>
+
+				<h2 class="text-2xl font-semibold mb-2 mt-6">Instructions</h2>
+				<div v-for="(step, index) in recipe.steps" :key="index" class="mb-4">
+					<div class="flex gap-2">
+						<input v-model="step.order" placeholder="Step #" type="number" class="border rounded p-2 w-16" />
+						<textarea v-model="step.description" placeholder="Instruction" class="border rounded p-2 flex-1"></textarea>
+						<button type="button" @click="removeStep(index)" class="text-red-600">Remove</button>
+					</div>
+				</div>
+				<button type="button" @click="addStep" class="text-blue-600">+ Add Step</button>
+
+				<div class="mt-6">
+					<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save Recipe</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</template>
+
 <script setup lang="ts">
-import { computed, definePageMeta, navigateTo, ref, useRoute } from '#imports';
+import { ref, onBeforeMount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { addRecipe, fetchRecipeBySlug, updateRecipe } from '@/services/recipe' // Adjust the import path as needed
+import type { Recipe } from '@/types/recipe.types' // Adjust the import path as needed
 
-import { Ref } from 'nuxt/dist/app/compat/vue-demi';
-import { fetchRecipeBySlug, updateRecipe } from '~/services';
-import { Recipe } from '~/types';
+const route = useRoute()
 
-definePageMeta({
-	middleware: [
-		async () => {
-			const route = useRoute();
+const router = useRouter()
+const recipe = ref<Recipe>({
+	id: '',
+	title: '',
+	image: '',
+	description: '',
+	ingredients: [],
+	steps: [],
+	slug: ''
+})
+const loading = ref(true)
+const isNewRecipe = route.params.slug === 'new'
 
-			const { data } = await fetchRecipeBySlug(route.params.slug as string);
+onBeforeMount(async () => {
+	const slug = route.params.slug as string
+	if (slug !== 'new') {
+		recipe.value = await fetchRecipeBySlug(slug)
+	}
+	loading.value = false
+})
 
-			if (!data || !data.value) return '/';
-		},
-	],
-});
+const addIngredient = () => {
+	recipe.value.ingredients.push({ quantity: 1, unit: '', name: '' })
+}
 
-const route = useRoute();
-const isLoading = ref(false);
+const removeIngredient = (index: number) => {
+	recipe.value.ingredients.splice(index, 1)
+}
 
-const slug = computed(() => {
-	return route.params.slug as string;
-});
+const addStep = () => {
+	recipe.value.steps.push({ order: recipe.value.steps.length + 1, description: '' })
+}
 
-const { data } = await fetchRecipeBySlug(slug.value);
+const removeStep = (index: number) => {
+	recipe.value.steps.splice(index, 1)
+}
 
-const handleSubmitForm = (newData: Ref<Recipe>) => {
-	isLoading.value = true;
-
-	return updateRecipe(newData.value)
-		.then((res) => {
-			const resData = res.data.value;
-			const error = res.error.value;
-
-			if (resData) {
-                console.log('Recipe updated successfully:', resData);   
-				navigateTo(`/recipe/${resData.slug}`);
-			}
-
-			if (error) {
-				useNotify({
-					message: error.message.split(ERROR_SEPARATOR).join('<br />'),
-					type: 'error',
-				});
-			}
-
-			return res;
-		})
-		.catch((err) => {
-			useNotify({
-				message: 'An error has occurred, please check them again.',
-				type: 'error',
-			});
-
-			console.error(err);
-		})
-		.finally(() => {
-			isLoading.value = false;
-		});
-};
+const saveRecipe = async () => {
+	const slug = route.params.slug as string
+	if (slug === 'new') {
+		await addRecipe(recipe.value) // Adjust the save logic as needed
+	} else {
+		await updateRecipe(slug, recipe.value) // Adjust the save logic as needed
+	router.push(`/recipe/${recipe.value.slug}`) // Redirect to the recipe detail page after saving
+	}
+}
 </script>
-
-<template>
-	<Head>
-		<Title>Nuxt3 Realworld | create new article</Title>
-	</Head>
-
-	<p class="text-h4 q-pb-lg">Edit Article:</p>
-
-	<AddArticle
-		:loading="isLoading"
-		:body="data?.article.body"
-		:description="data?.article.description"
-		:tag-list="data?.article.tagList"
-		:title="data?.article.title"
-		@on-submit="handleSubmitForm"
-	/>
-</template>
-
-
-
-
-<template>
-    <div class="create-update-recipe">
-        <h1>{{ isEditMode ? 'Update Recipe' : 'Create Recipe' }}</h1>
-        <form @submit.prevent="handleSubmit">
-            <div class="form-group">
-                <label for="title">Title</label>
-                <input
-                    type="text"
-                    id="title"
-                    v-model="recipe.title"
-                    placeholder="Enter recipe title"
-                    required
-                />
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea
-                    id="description"
-                    v-model="recipe.description"
-                    placeholder="Enter recipe description"
-                    required
-                ></textarea>
-            </div>
-            <div class="form-group">
-                <label for="ingredients">Ingredients</label>
-                <textarea
-                    id="ingredients"
-                    v-model="recipe.ingredients"
-                    placeholder="Enter ingredients (comma-separated)"
-                    required
-                ></textarea>
-            </div>
-            <div class="form-group">
-                <label for="instructions">Instructions</label>
-                <textarea
-                    id="instructions"
-                    v-model="recipe.instructions"
-                    placeholder="Enter cooking instructions"
-                    required
-                ></textarea>
-            </div>
-            <button type="submit">{{ isEditMode ? 'Update' : 'Create' }}</button>
-        </form>
-    </div>
-</template>
-
-<script>
-export default {
-    data() {
-        return {
-            recipe: {
-                title: '',
-                description: '',
-                ingredients: '',
-                instructions: '',
-            },
-            isEditMode: false,
-        };
-    },
-    created() {
-        const recipeId = this.$route.params.id;
-        if (recipeId) {
-            this.isEditMode = true;
-            this.fetchRecipe(recipeId);
-        }
-    },
-    methods: {
-        fetchRecipe(id) {
-            // Replace with actual API call
-            const mockRecipe = {
-                title: 'Sample Recipe',
-                description: 'This is a sample recipe.',
-                ingredients: 'Ingredient1, Ingredient2',
-                instructions: 'Step 1, Step 2',
-            };
-            this.recipe = mockRecipe;
-        },
-        handleSubmit() {
-            if (this.isEditMode) {
-                this.updateRecipe();
-            } else {
-                this.createRecipe();
-            }
-        },
-        createRecipe() {
-            // Replace with actual API call
-            console.log('Creating recipe:', this.recipe);
-            this.$router.push('/');
-        },
-        updateRecipe() {
-            // Replace with actual API call
-            console.log('Updating recipe:', this.recipe);
-            this.$router.push('/');
-        },
-    },
-};
-</script>
-
-<style scoped>
-.create-update-recipe {
-    max-width: 600px;
-    margin: 0 auto;
-}
-.form-group {
-    margin-bottom: 1rem;
-}
-label {
-    display: block;
-    margin-bottom: 0.5rem;
-}
-input,
-textarea {
-    width: 100%;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-button {
-    padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-button:hover {
-    background-color: #0056b3;
-}
-</style>

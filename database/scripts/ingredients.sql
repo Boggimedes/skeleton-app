@@ -52,7 +52,7 @@ INSERT INTO ingredients (id, name, type, measurement_unit, serving_quantity, cre
 (47, 'Coconut Milk', 'liquid', 'milliliters', 200, NOW(), NOW()),
 (48, 'Oats', 'grain', 'grams', 50, NOW(), NOW()),
 (49, 'Chickpeas', 'legume', 'grams', 150, NOW(), NOW()),
-(50, 'Lentils', 'legume', 'grams', 150, NOW(), NOW())
+(50, 'Lentils', 'legume', 'grams', 150, NOW(), NOW()),
 (51, 'Beef', 'red meat', 'grams', 250, NOW(), NOW()),
 (52, 'Pork', 'red meat', 'grams', 250, NOW(), NOW()),
 (53, 'Turkey', 'poultry', 'grams', 200, NOW(), NOW()),
@@ -61,4 +61,5 @@ INSERT INTO ingredients (id, name, type, measurement_unit, serving_quantity, cre
 (57, 'Lobster', 'seafood', 'grams', 150, NOW(), NOW()),
 (58, 'Tuna', 'fish', 'grams', 200, NOW(), NOW()),
 (59, 'Sardines', 'fish', 'grams', 150, NOW(), NOW()),
-(60, 'Anchovies', 'fish', 'grams', 100, NOW(), NOW());
+(60, 'Anchovies', 'fish', 'grams', 100, NOW(), NOW()),
+(61, 'Food', 'food', 'Bag of', 1, NOW(), NOW());

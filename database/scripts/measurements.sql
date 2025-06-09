@@ -1,4 +1,5 @@
-INSERT INTO measurements (name, unit, abbreviation, type, teaspoon_equivalent) VALUES
+INSERT INTO measurements (`name`, unit, abbreviation, `type`, teaspoon_equivalent) 
+VALUES
 ('Teaspoon', 'teaspoon', 'tsp', 'volume', 1),
 ('Tablespoon', 'tablespoon', 'tbsp', 'volume', 3),
 ('Cup', 'cup', 'cup', 'volume', 48),
@@ -24,7 +25,7 @@ INSERT INTO measurements (name, unit, abbreviation, type, teaspoon_equivalent) V
 ('Head', 'head', 'head', 'count', null),
 ('Bunch', 'bunch', 'bunch', 'count', null),
 ('Sprig', 'sprig', 'sprig', 'count', null),
-('Leaf', 'leaf', 'leaf', 'count', null)
+('Leaf', 'leaf', 'leaf', 'count', null),
 ('Big', 'big', 'big', 'size', null),
 ('Medium', 'medium', 'medium', 'size', null),
 ('Small', 'small', 'small', 'size', null)

@@ -2,30 +2,77 @@
 
 namespace App\Repositories;
 
+use App\Models\Ingredient;
 use App\Models\Recipe;
+use App\Models\User;
 use App\Repositories\Contracts\RecipeRepositoryInterface;
 use Illuminate\Support\Str;
 
-class RecipeRepository implements RecipeRepositoryInterface
+class RecipeRepository extends BaseRepository implements RecipeRepositoryInterface
 {
     /**
-     * Get all recipes.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @var IngredientRepository
      */
-    public function getAll()
+    private $ingredientRepository;
+
+    /**
+     * RecipeRepository constructor.
+     */
+    public function __construct()
     {
-        return Recipe::all();
+        parent::__construct(Recipe::class);
+        $this->ingredientRepository = new IngredientRepository();
     }
 
     /**
-     * Find a recipe by its ID.
+     * Search recipes by keyword in the title or description.
      *
-     * @return Recipe|null
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findById(int $id)
+    public function searchByKeyword(string $word)
     {
-        return Recipe::find($id);
+        \Log::info("Searching recipes with keyword: {$word}");
+        if (empty($word)) {
+            return Recipe::query();
+        }
+
+        return Recipe::where(function ($query) use ($word) {
+            $query->where('title', 'LIKE', "%{$word}%")
+                ->orWhere('description', 'LIKE', "%{$word}%")
+                ->orWhereHas('ingredients', function ($query) use ($word) {
+                    $query->where('name', 'LIKE', "%{$word}%");
+                })
+                ->orWhereHas('recipeSteps', function ($query) use ($word) {
+                    $query->where('description', 'LIKE', "%{$word}%");
+                });
+        });
+    }
+
+    /**
+     * Search recipes by ingredient.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function searchRecipeByIngredients($query, string $ingredient)
+    {
+        return $query->whereHas('ingredients', function ($query) use ($ingredient) {
+            $this->ingredientRepository->searchIngredients($query, $ingredient);
+        });
+    }
+
+    /**
+     * Search recipes by category.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function searchRecipeByAuthors($query, string $email)
+    {
+        $author = User::where('email', $email)->first();
+        if (!$author) {
+            return $query;
+        }
+
+        return $query->where('user_id', $author->id);
     }
 
     /**
@@ -36,8 +83,45 @@ class RecipeRepository implements RecipeRepositoryInterface
     public function create(array $data)
     {
         $data['slug'] = $this->createUniqueSlugStr($data['title']);
+        $steps = $data['steps'] ?? [];
+        unset($data['steps']);
+        $ingredients = $data['ingredients'] ?? [];
+        unset($data['ingredients']);
+        $recipe = Recipe::create($data);
+        \Log::info('Creating recipe with data: '.json_encode($ingredients));
+        \Log::info('Recipe created with ID: '.json_encode($steps));
+        if (isset($ingredients)) {
+            $this->saveRecipeIngredients($recipe, $ingredients);
+        }
+        if (isset($steps)) {
+            $this->saveRecipeSteps($recipe, $steps);
+        }
 
-        return Recipe::create($data);
+        return $recipe;
+    }
+
+    /**
+     * Update an existing recipe.
+     *
+     * @return Recipe
+     */
+    public function update($recipe, array $data)
+    {
+        $steps = $data['steps'] ?? [];
+        unset($data['steps']);
+        $ingredients = $data['ingredients'] ?? [];
+        unset($data['ingredients']);
+        Recipe::where('id', $recipe->id)->update($data);
+        if (isset($ingredients)) {
+            $recipe->recipeIngredients()->delete();
+            $this->saveRecipeIngredients($recipe, $ingredients);
+        }
+        if (isset($steps)) {
+            $recipe->recipeSteps()->delete();
+            $this->saveRecipeSteps($recipe, $steps);
+        }
+
+        return $recipe->refresh();
     }
 
     /**
@@ -47,7 +131,7 @@ class RecipeRepository implements RecipeRepositoryInterface
      *
      * @return string
      */
-    private function createUniqueSlug($title)
+    private function createUniqueSlugStr($title)
     {
         $slug = Str::slug($title);
         $originalSlug = $slug;
@@ -73,34 +157,84 @@ class RecipeRepository implements RecipeRepositoryInterface
     }
 
     /**
-     * Update an existing recipe.
+     * Find a recipe by its slug or ID.
      *
-     * @return bool
+     * @return Recipe|null
      */
-    public function update(int $id, array $data)
+    public function findByIdOrSlug($idOrSlug)
     {
-        $recipe = $this->findById($id);
-
-        if ($recipe) {
-            return $recipe->update($data);
+        if (is_numeric($idOrSlug)) {
+            $recipe = Recipe::find($idOrSlug);
+        } else {
+            $recipe = Recipe::where('slug', $idOrSlug)->first();
         }
 
-        return false;
+        $recipe->steps = $recipe->recipeSteps ? $recipe->recipeSteps->sortBy('order')->values() : [];
+        $recipeIngredients = $recipe->recipeIngredients ? $recipe->recipeIngredients->load('ingredient') : [];
+        $recipe->ingredients = $recipeIngredients->map(function ($ri) {
+            return [
+                'id' => $ri->id,
+                'name' => $ri->ingredient->name,
+                'quantity' => rtrim(rtrim($ri->quantity, '0'), '.'),
+                'unit' => $ri->unit,
+                'measurement_unit' => $ri->ingredient->measurement_unit,
+                'serving_quantity' => $ri->ingredient->serving_quantity,
+                'calories' => $ri->ingredient->calories,
+                'carbs' => $ri->ingredient->carbs,
+                'protein' => $ri->ingredient->protein,
+                'fat' => $ri->ingredient->fat,
+            ];
+        });
+
+        return $recipe;
     }
 
     /**
-     * Delete a recipe by its ID.
+     * Save recipe steps.
      *
-     * @return bool|null
+     * @return void
      */
-    public function delete(int $id)
+    private function saveRecipeSteps(Recipe $recipe, array $steps)
     {
-        $recipe = $this->findById($id);
-
-        if ($recipe) {
-            return $recipe->delete();
+        foreach ($steps as $index => $step) {
+            $recipe->recipeSteps()->create([
+                'description' => $step['description'],
+                'order' => $step['order'] ?? $index + 1,
+            ]);
         }
+    }
 
-        return false;
+    /**
+     * Save recipe ingredients.
+     *
+     * @return void
+     */
+    private function saveRecipeIngredients(Recipe $recipe, array $ingredients)
+    {
+        \Log::debug('Saving recipe ingredients: '.json_encode($ingredients));
+        foreach ($ingredients as $ingredient) {
+            $search = Ingredient::query();
+            $ingredientModel = $this->ingredientRepository->searchIngredients($search, $ingredient['name'])->first();
+            \Log::debug('Ingredient search result: '.json_encode($ingredientModel));
+            if ($ingredientModel) {
+                $ingredient['id'] = $ingredientModel->id;
+                $ingredient['measurement_unit'] = $ingredient['unit'] ?? $ingredientModel->measurement_unit;
+            } else {
+                $ingredientModel = Ingredient::create([
+                    'name' => $ingredient['name'],
+                    'measurement_unit' => $ingredient['unit'] ?? null,
+                ]);
+                $ingredient['id'] = $ingredientModel->id;
+                \Log::debug('Created new ingredient: '.json_encode($ingredientModel));
+            }
+            $recipe->recipeIngredients()->create(
+                [
+                    'ingredient_id' => $ingredient['id'] ?? null,
+                    'name' => $ingredient['name'] ?? null,
+                    'quantity' => $ingredient['quantity'],
+                    'unit' => $ingredient['unit'] ?? null,
+                ]
+            );
+        }
     }
 }

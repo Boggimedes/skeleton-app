@@ -3,46 +3,37 @@
 namespace App\Repositories;
 
 use App\Models\Ingredient;
+use App\Repositories\Contracts\IngredientRepositoryInterface;
 
-class IngredientRepository implements IngredientRepositoryInterface
+class IngredientRepository extends BaseRepository implements IngredientRepositoryInterface
 {
-    public function getAllIngredients()
+    /**
+     * RecipeRepository constructor.
+     */
+    public function __construct()
     {
-        return Ingredient::all();
+        parent::__construct(Ingredient::class);
     }
 
-    public function getIngredientById($id)
+    public function searchIngredients($query, string $ingredient)
     {
-        return Ingredient::findOrFail($id);
-    }
-
-    public function createIngredient(array $data)
-    {
-        return Ingredient::create($data);
-    }
-
-    public function updateIngredient($id, array $data)
-    {
-        $ingredient = Ingredient::findOrFail($id);
-        $ingredient->update($data);
-        return $ingredient;
-    }
-
-    public function deleteIngredient($id)
-    {
-        $ingredient = Ingredient::findOrFail($id);
-        $ingredient->delete();
-        return $ingredient;
-    }
-
-    public function searchIngredients($query)
-    {
-        $ingredients = Ingredient::where('name', 'like', '%' . $query . '%')->get();
+        $ingredientQuery = $query->where('name', 'like', '%'.$ingredient.'%');
+        $ingredients = $ingredientQuery->get();
         // If no (or one single name that is not an exact match) names were found with the initial fuzzy search, try levenshtein
-        if (($ingredients->isEmpty() && strlen($query) > 4) || ($ingredients->count() === 1 && $ingredients[0]->name !== $query)) {
-            $levIngred = Ingredient::fromQuery("SELECT * FROM ingredients WHERE levenshtein(left(`ingredients`.`name`,length('$query')), '$query')<=3 ORDER BY levenshtein(name, '$query'), name");
-            $ingredients = $ingredients->merge($levIngred);
+        if (($ingredients->isEmpty() && strlen($ingredient) > 4) || ($ingredients->count() === 1 && $ingredients[0]->name !== $ingredient)) {
+            $levNum = 1;
+            if (strlen($ingredient) > 5) {
+                $levNum = 2;
+            }
+            if (strlen($ingredient) > 10) {
+                $levNum = 3;
+            }
+
+            // Static DB name 'skeleton_app' is used here for expediency. Long term Levenshtein needs to be added to the test database
+            return $query->whereRaw("skeleton_app.levenshtein(`ingredients`.name, '$ingredient')<={$levNum}")
+            ->orWhere('ingredients.name', 'LIKE', "%{$ingredient}%")->orderByRaw("skeleton_app.levenshtein(`ingredients`.name, '$ingredient') ASC");
         }
-        return $ingredients;
+
+        return $ingredientQuery;
     }
 }

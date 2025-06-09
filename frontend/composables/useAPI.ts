@@ -1,6 +1,7 @@
 import { type UseFetchOptions } from '#app';
 import { createError, useFetch, useRuntimeConfig } from '#imports';
 import { defu } from 'defu';
+import type { NitroFetchOptions } from 'nitropack';
 
 interface ErrorType {
 	errors: Record<string, string[]>;
@@ -9,11 +10,9 @@ interface ErrorType {
 type FetchOptions<T> = UseFetchOptions<T> & { timeout?: number };
 
 export function useAPI<T = unknown>(url: string | (() => string), userOptions: FetchOptions<T> = {}) {
-	const config = useRuntimeConfig();
 
 	/**
 	 * Aborting a fetch with timeout
-	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal#aborting_a_fetch_with_timeout_or_explicit_abort|Aborting a fetch}
 	 */
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => {
@@ -21,7 +20,7 @@ export function useAPI<T = unknown>(url: string | (() => string), userOptions: F
 	}, userOptions.timeout);
 
 	const defaultOptions: FetchOptions<T> = {
-		baseURL: `${config.public.baseUrl}`,
+		baseURL: `http://localhost:8888/api`, // Replace with your actual API base URL
 		method: 'GET',
 		retry: 3,
 		signal: userOptions.timeout ? controller.signal : undefined,
@@ -30,11 +29,11 @@ export function useAPI<T = unknown>(url: string | (() => string), userOptions: F
 		key: typeof url === 'string' ? url : url(),
 
 		onRequest({ options }) {
-				options.headers = {
-					...options.headers,
-					'Accept': 'application/json',
+				options.headers = new Headers({
+					...(options.headers instanceof Headers ? Object.fromEntries(options.headers.entries()) : options.headers),
+					Accept: 'application/json',
 					'Content-type': 'application/json',
-				};
+				});
 		},
 
 		onResponse({ response }) {
@@ -60,13 +59,13 @@ export function useAPI<T = unknown>(url: string | (() => string), userOptions: F
 				return [...acc, ...value.map((item) => `${key} ${item}`)];
 			}, []);
 
-			throw createError({ statusCode, statusMessage, message: message.join('_::_') });
+			throw createError({ statusCode, statusMessage, message: message.join("::|::") });
 		},
 	};
 
 	const options = defu(userOptions, defaultOptions) as UseFetchOptions<T>;
 
-	return useFetch(url, options).finally(() => {
+	return $fetch(typeof url === 'function' ? url() : url, options as NitroFetchOptions<string>).finally(() => {
 		if (userOptions.timeout && timeoutId) {
 			clearTimeout(timeoutId);
 		}

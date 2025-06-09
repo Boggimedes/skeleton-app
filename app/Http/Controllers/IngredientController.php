@@ -2,28 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Repositories\IngredientRepositoryInterface;
-use Illuminate\Http\Request;
 use App\Http\Requests\IngredientRequest;
+use Illuminate\Http\Request;
 
 class IngredientController extends Controller
 {
     protected $ingredientRepository;
 
-    public function __construct(IngredientRepositoryInterface $ingredientRepository)
+    public function __construct(IngredientRequest $ingredientRepository)
     {
         $this->ingredientRepository = $ingredientRepository;
     }
 
     public function index()
     {
-        $ingredients = $this->ingredientRepository->getAllIngredients();
+        $ingredients = $this->ingredientRepository->all();
+
         return response()->json($ingredients);
     }
 
     public function show($id)
     {
-        $ingredient = $this->ingredientRepository->getIngredientById($id);
+        $ingredient = $this->ingredientRepository->find($id);
+
         return response()->json($ingredient);
     }
 
@@ -31,6 +32,7 @@ class IngredientController extends Controller
     {
         $query = $request->input('query');
         $ingredients = $this->ingredientRepository->searchIngredients($query);
+
         return response()->json($ingredients);
     }
 
@@ -38,7 +40,8 @@ class IngredientController extends Controller
     {
         $validated = $request->validated();
 
-        $ingredient = $this->ingredientRepository->createIngredient($validated);
+        $ingredient = $this->ingredientRepository->create($validated);
+
         return response()->json($ingredient, 201);
     }
 
@@ -46,13 +49,15 @@ class IngredientController extends Controller
     {
         $validated = $request->validated();
 
-        $ingredient = $this->ingredientRepository->updateIngredient($id, $validated);
+        $ingredient = $this->ingredientRepository->update($id, $validated);
+
         return response()->json($ingredient);
     }
 
     public function destroy($id)
     {
         $this->ingredientRepository->deleteIngredient($id);
+
         return response()->json(null, 204);
     }
 }

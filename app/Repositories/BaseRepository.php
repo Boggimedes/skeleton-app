@@ -3,15 +3,14 @@
 namespace App\Repositories;
 
 use App\Repositories\Contracts\BaseRepositoryInterface;
-use Illuminate\Database\Eloquent\Model;
 
 class BaseRepository implements BaseRepositoryInterface
 {
     protected $model;
 
-    public function __construct(Model $model)
+    public function __construct($model)
     {
-        $this->model = $model;
+        $this->model = new $model();
     }
 
     public function create(array $data)
@@ -19,16 +18,17 @@ class BaseRepository implements BaseRepositoryInterface
         return $this->model->create($data);
     }
 
-    public function update($id, array $data)
+    public function update($model, array $data)
     {
-        $model = $this->find($id);
         $model->update($data);
+
         return $model;
     }
 
     public function delete($id)
     {
         $model = $this->find($id);
+
         return $model->delete();
     }
 

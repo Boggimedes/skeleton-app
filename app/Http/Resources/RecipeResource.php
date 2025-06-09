@@ -16,9 +16,4 @@ class RecipeResource extends JsonResource
     {
         return parent::toArray($request);
     }
-
-    public function withResponse(Request $request, $response)
-    {
-        $response->header('Content-Type', 'application/json');
-    }
 }

@@ -1,7 +1,7 @@
 export interface Step {
-  id: string;
+  id?: string;
   description: string;
   order: number;
-  recipeId: string;
+  recipeId?: string;
 }
 
