@@ -1,4 +1,5 @@
 ## Features Planned
+ - Pagination...  yeah, totally forgot this
  - More testing (current coverate only about 30%)
  - Ingredient Input/Edit Page
  - Calorie and Macronutrient Calculator
